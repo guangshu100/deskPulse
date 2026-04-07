@@ -1,7 +1,37 @@
-import { enable as enableAutostart, disable as disableAutostart, isEnabled as isAutostartEnabled } from '@tauri-apps/plugin-autostart';
+// Autostart plugin - loaded dynamically with fallback
+let enableAutostart = async () => {};
+let disableAutostart = async () => {};
+let isAutostartEnabled = async () => false;
 
-const { invoke } = window.__TAURI__.core;
-const { listen } = window.__TAURI__.event;
+try {
+  const autostartModule = await import('@tauri-apps/plugin-autostart');
+  enableAutostart = autostartModule.enable;
+  disableAutostart = autostartModule.disable;
+  isAutostartEnabled = autostartModule.isEnabled;
+} catch (e) {
+  console.warn('Autostart plugin not available:', e);
+}
+
+// Tauri API - with fallback
+const getTauriApi = () => {
+  if (!window.__TAURI__) {
+    console.error('Tauri API not available');
+    return null;
+  }
+  return window.__TAURI__;
+};
+
+const invoke = async (...args) => {
+  const tauri = getTauriApi();
+  if (!tauri) throw new Error('Tauri API not available');
+  return tauri.core.invoke(...args);
+};
+
+const listen = async (...args) => {
+  const tauri = getTauriApi();
+  if (!tauri) throw new Error('Tauri API not available');
+  return tauri.event.listen(...args);
+};
 
 // State
 let config = null;
@@ -20,18 +50,22 @@ let petData = null;
 
 // Initialize
 window.addEventListener("DOMContentLoaded", async () => {
-  await loadConfig();
-  await loadWaterConfig();
-  await loadPetState();
-  setupEventListeners();
-  setupIdleListener();
-  setupNotificationListener();
-  setupFullscreenListener();
-  setupResumeListener();
-  setupWaterNotificationListener();
-  updateStatus();
-  startLocalCountdown();
-  startWaterCountdown();
+  try {
+    await loadConfig();
+    await loadWaterConfig();
+    await loadPetState();
+    setupEventListeners();
+    setupIdleListener();
+    setupNotificationListener();
+    setupFullscreenListener();
+    setupResumeListener();
+    setupWaterNotificationListener();
+    updateStatus();
+    startLocalCountdown();
+    startWaterCountdown();
+  } catch (e) {
+    console.error("Failed to initialize:", e);
+  }
 });
 
 async function loadConfig() {
@@ -648,6 +682,10 @@ async function setupIdleListener() {
     eyeHealth = status.eye_health || 100;
     continuousWorkSeconds = status.continuous_work_seconds || 0;
     nextReminderSeconds = status.next_reminder_seconds || 0;
+    
+    // 更新 UI
+    document.getElementById("eye-health").textContent = `${eyeHealth}%`;
+    document.getElementById("break-count").textContent = status.skip_count_today || 0;
   } catch (e) {
     console.error("Failed to get status:", e);
   }
