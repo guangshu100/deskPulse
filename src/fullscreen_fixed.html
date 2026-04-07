@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EyeCare - 休息一?/title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-color: #E8F4F8;
+      --text-color: #333333;
+      --text-light: #ffffff;
+      --accent-color: #4CAF50;
+      --danger-color: #e53935;
+      --warning-color: #ff6d00;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+      transition: background 0.8s;
+      margin: 0;
+    }
+
+    body.has-bg-image {
+      color: var(--text-light);
+    }
+
+    /* Background image layer */
+    .bg-image-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 1.2s ease-in;
+    }
+
+    .bg-image-layer.loaded {
+      opacity: 1;
+    }
+
+    .bg-image-layer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+    }
+
+    body.has-bg-image .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Image loading spinner */
+    .bg-loading {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      font-size: 13px;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .bg-loading.show {
+      opacity: 1;
+    }
+
+    .bg-loading .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(170,170,170,0.3);
+      border-top-color: #aaa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Image source label */
+    .bg-source {
+      position: fixed;
+      bottom: 16px;
+      right: 20px;
+      z-index: 2;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      opacity: 0;
+      transition: opacity 0.8s;
+    }
+
+    .bg-source.show {
+      opacity: 1;
+    }
+
+    /* Severity-based body styling */
+    body.severity-4 { --bg-color: #FFF3E0; }
+    body.severity-5 { --bg-color: #FBE9E7; }
+
+    /* Override text colors when bg image is present */
+    body.has-bg-image .main-text,
+    body.has-bg-image .sub-text,
+    body.has-bg-image .interaction-text {
+      color: #ffffff;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+
+    body.has-bg-image .health-label {
+      color: rgba(255,255,255,0.9);
+    }
+
+    body.has-bg-image .health-detail {
+      color: rgba(255,255,255,0.7);
+    }
+
+    body.has-bg-image .close-btn {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(4px);
+    }
+
+    body.has-bg-image .close-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    body.has-bg-image .skip-panel {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    body.has-bg-image .skip-panel h3 {
+      color: rgba(255,255,255,0.7);
+    }
+
+    body.has-bg-image .skip-list li {
+      color: rgba(255,255,255,0.8);
+    }
+
+    body.has-bg-image .skip-list .skip-time {
+      color: #FFB74D;
+    }
+
+    body.has-bg-image .skip-list .skip-reason {
+      color: rgba(255,255,255,0.5);
+    }
+
+    body.has-bg-image .skip-list .skip-lost {
+      color: rgba(255,255,255,0.5);
+    }
+
+    body.has-bg-image .damage-bill {
+      background: rgba(0, 0, 0, 0.35);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    body.has-bg-image .damage-bill .damage-title {
+      color: #FFCDD2;
+    }
+
+    body.has-bg-image .damage-stat .damage-value {
+      color: #EF9A9A;
+    }
+
+    body.has-bg-image .damage-stat .damage-label {
+      color: rgba(255,255,255,0.5);
+    }
+
+    body.has-bg-image .forced-warning {
+      background: rgba(0, 0, 0, 0.3);
+      border-color: rgba(255,183,77,0.4);
+    }
+
+    body.has-bg-image .forced-warning p:first-child {
+      color: #FFB74D;
+    }
+
+    body.has-bg-image .forced-warning p:last-child {
+      color: rgba(255,255,255,0.7);
+    }
+
+    body.has-bg-image .timer {
+      color: #ffffff;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    body.has-bg-image .timer span {
+      color: rgba(255,255,255,0.6);
+    }
+
+    body.has-bg-image .hint {
+      color: rgba(255,255,255,0.4);
+    }
+
+    body.has-bg-image .forced-countdown {
+      color: #FFB74D;
+    }
+
+    body.has-bg-image .health-bar-track {
+      background: rgba(255,255,255,0.2);
+    }
+
+    body.has-bg-image .fun-fact {
+      background: rgba(0, 0, 0, 0.35);
+      color: rgba(255,255,255,0.85);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    body.has-bg-image .fun-fact-title {
+      color: #81C784;
+    }
+
+    .container {
+      text-align: center;
+      padding: 40px;
+      max-width: 640px;
+      width: 100%;
+    }
+
+    /* Eye health bar */
+    .health-section {
+      margin-bottom: 28px;
+    }
+
+    .health-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .health-label .health-emoji {
+      font-size: 20px;
+      transition: transform 0.3s;
+    }
+
+    .health-bar-track {
+      width: 100%;
+      height: 12px;
+      background: rgba(0,0,0,0.08);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .health-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s ease, background 0.5s;
+    }
+
+    .health-bar-fill.green { background: linear-gradient(90deg, #66BB6A, #43A047); }
+    .health-bar-fill.yellow { background: linear-gradient(90deg, #FFA726, #FB8C00); }
+    .health-bar-fill.orange { background: linear-gradient(90deg, #FF7043, #E64A19); }
+    .health-bar-fill.red { background: linear-gradient(90deg, #EF5350, #C62828); }
+    .health-bar-fill.dark { background: linear-gradient(90deg, #B71C1C, #880E4F); }
+
+    .health-detail {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* Main text */
+    .main-text {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-color);
+      line-height: 1.3;
+    }
+
+    body.severity-5 .main-text {
+      color: #B71C1C;
+    }
+
+    /* AI badge */
+    .ai-badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      background: rgba(76, 175, 80, 0.15);
+      color: #4CAF50;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    body.has-bg-image .ai-badge {
+      background: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.8);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .main-text.ai-generated {
+      font-style: italic;
+    }
+
+    .sub-text {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    /* Skip history panel */
+    .skip-panel {
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      text-align: left;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .skip-panel h3 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .skip-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .skip-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      font-size: 13px;
+      color: #555;
+    }
+
+    .skip-list li:last-child { border-bottom: none; }
+
+    .skip-list .skip-time {
+      font-weight: 600;
+      color: #e65100;
+      min-width: 50px;
+    }
+
+    .skip-list .skip-reason {
+      flex: 1;
+      text-align: center;
+      color: #888;
+      font-style: italic;
+    }
+
+    .skip-list .skip-lost {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* Damage bill */
+    .damage-bill {
+      background: rgba(229, 57, 53, 0.08);
+      border: 1px solid rgba(229, 57, 53, 0.2);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+    }
+
+    .damage-bill .damage-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #c62828;
+      margin-bottom: 8px;
+    }
+
+    .damage-bill .damage-stats {
+      display: flex;
+      justify-content: space-around;
+      gap: 12px;
+    }
+
+    .damage-stat {
+      text-align: center;
+    }
+
+    .damage-stat .damage-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #c62828;
+    }
+
+    .damage-stat .damage-label {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* Forced warning */
+    .forced-warning {
+      background: rgba(255, 152, 0, 0.15);
+      border: 1px solid rgba(255, 152, 0, 0.4);
+      border-radius: 12px;
+      padding: 16px 24px;
+      margin-bottom: 20px;
+    }
+
+    .forced-warning p:first-child {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e65100;
+      margin-bottom: 4px;
+    }
+
+    .forced-warning p:last-child {
+      font-size: 14px;
+      color: #ff6d00;
+    }
+
+    /* Interaction guide */
+    .interaction {
+      margin-bottom: 32px;
+    }
+
+    .interaction-text {
+      font-size: 18px;
+      color: #555;
+      animation: fadeInOut 10s ease-in-out infinite;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* Timer */
+    .timer {
+      font-size: 72px;
+      font-weight: 300;
+      color: var(--text-color);
+      margin-bottom: 32px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer span {
+      font-size: 22px;
+      color: #888;
+      margin-left: 6px;
+    }
+
+    /* Close button */
+    .close-btn {
+      padding: 12px 36px;
+      font-size: 16px;
+      color: #666;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.8);
+      transform: scale(1.03);
+    }
+
+    .close-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      position: fixed;
+      bottom: 20px;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .forced-countdown {
+      font-size: 13px;
+      color: #ff6d00;
+      margin-top: 8px;
+    }
+
+    /* 动态引导动?*/
+    .interaction-text {
+      transition: all 0.5s ease;
+    }
+    
+    .interaction-text.fade-in {
+      animation: fadeIn 0.8s ease forwards;
+    }
+    
+    .interaction-text.pulse {
+      animation: textPulse 2s ease-in-out infinite;
+    }
+    
+    .emoji-spin {
+      display: inline-block;
+      animation: emojiSpin 3s linear infinite;
+    }
+    
+    .emoji-blink {
+      display: inline-block;
+      animation: emojiBlink 1s ease-in-out infinite;
+    }
+    
+    .fun-fact {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #666;
+      animation: slideIn 0.5s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .fun-fact-title {
+      font-weight: 600;
+      color: #4CAF50;
+      margin-bottom: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes textPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    @keyframes emojiSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes emojiBlink {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-height: 600px) {
+      .container { padding: 20px; }
+      .main-text { font-size: 24px; }
+      .timer { font-size: 56px; }
+      .skip-panel { max-height: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background image layer -->
+  <div class="bg-image-layer" id="bgImageLayer"></div>
+  <div class="bg-loading" id="bgLoading"><div class="spinner"></div>正在加载绝美风景...</div>
+  <a class="bg-source" id="bgSource" href="#" target="_blank"></a>
+
+  <div class="container">
+    <!-- Eye Health Bar -->
+    <div class="health-section" id="healthSection">
+      <div class="health-label">
+        <span id="healthEmoji">👁?/span>
+        <span>眼睛生命?/span>
+        <span id="healthPercent">100%</span>
+      </div>
+      <div class="health-bar-track">
+        <div class="health-bar-fill green" id="healthBar" style="width:100%"></div>
+      </div>
+      <div class="health-detail" id="healthDetail">状态良好，继续保持?/div>
+    </div>
+
+    <div class="main-text" id="mainText">👁?让眼睛休息一?/div>
+
+    <!-- AI generated badge -->
+    <div class="ai-badge" id="aiBadge" style="display:none;">?AI 生成</div>
+
+    <div class="sub-text" id="subText">远眺6米外的物体，睫状肌会放松哦～</div>
+
+    <!-- Skip History Panel (shown when there are skip records) -->
+    <div class="skip-panel" id="skipPanel" style="display:none;">
+      <h3>📋 今日跳过记录</h3>
+      <ul class="skip-list" id="skipList"></ul>
+    </div>
+
+    <!-- Damage Bill (shown at severity >= 3) -->
+    <div class="damage-bill" id="damageBill" style="display:none;">
+      <div class="damage-title">💰 你的眼睛账单</div>
+      <div class="damage-stats">
+        <div class="damage-stat">
+          <div class="damage-value" id="damageSkippedTime">0分钟</div>
+          <div class="damage-label">未休息时?/div>
+        </div>
+        <div class="damage-stat">
+          <div class="damage-value" id="damageFatigue">0%</div>
+          <div class="damage-label">睫状肌疲劳度</div>
+        </div>
+        <div class="damage-stat">
+          <div class="damage-value" id="damageRecovery">5分钟</div>
+          <div class="damage-label">建议休息时长</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forced Warning -->
+    <div class="forced-warning" id="forcedWarning" style="display:none;">
+      <p>⚠️ 今日跳过次数已达上限</p>
+      <p>请坚持休息保护眼睛哦?/p>
+    </div>
+
+    <div class="interaction">
+      <div class="interaction-text" id="interactionText">👁?轻轻闭眼休息一?/div>
+    </div>
+
+    <div class="timer">
+      <span id="countdown">30</span><span>?/span>
+    </div>
+
+    <button class="close-btn" id="closeBtn">元气回归 ?/button>
+    <div class="forced-countdown" id="forcedCountdown" style="display:none;"></div>
+  </div>
+
+  <div class="hint" id="hint">点击任意位置或按 Esc 键关?/div>
+
+  <script>
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const duration = parseInt(params.get('duration') || '30');
+    const themeColor = params.get('theme') || '#E8F4F8';
+    const forced = params.get('forced') === 'true';
+    const severity = parseInt(params.get('severity') || '1');
+    const eyeHealth = parseInt(params.get('eye_health') || '100');
+    const totalSkipped = parseInt(params.get('total_skipped') || '0');
+    const forcedMinDuration = Math.min(15, duration);
+
+    // Parse AI content
+    const aiTitle = params.get('ai_title') || '';
+    const aiMainText = params.get('ai_main_text') || '';
+    const aiSubText = params.get('ai_sub_text') || '';
+    const aiInteraction = params.get('ai_interaction') || '';
+
+    // Apply AI content if available
+    if (aiMainText) {
+      document.getElementById('mainText').textContent = aiMainText;
+      document.getElementById('mainText').classList.add('ai-generated');
+      document.getElementById('aiBadge').style.display = 'inline-block';
+    }
+    if (aiSubText) {
+      document.getElementById('subText').textContent = aiSubText;
+    }
+    if (aiInteraction) {
+      document.getElementById('interactionText').textContent = aiInteraction;
+    }
+
+    // ---- Background Image ----
+    const bgImageLayer = document.getElementById('bgImageLayer');
+    const bgLoading = document.getElementById('bgLoading');
+    const bgSource = document.getElementById('bgSource');
+
+    // Curated collection of stunning free-to-use landscape/photo URLs
+    // Sources: Unsplash (high quality, free license)
+    const bgImagePool = [
+      // Nature landscapes
+      { url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&h=1080&fit=crop&q=80', author: 'Samuel Ferrara', link: 'https://unsplash.com/photos/1506905925346-21bda4d32df4' },
+      { url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&h=1080&fit=crop&q=80', author: 'Lukasz Szmigiel', link: 'https://unsplash.com/photos/1470071459604-3b5ec3a7fe05' },
+      { url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&h=1080&fit=crop&q=80', author: 'Dave Hoefler', link: 'https://unsplash.com/photos/1441974231531-c6227db76b6e' },
+      { url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&h=1080&fit=crop&q=80', author: 'Yucel Moran', link: 'https://unsplash.com/photos/1507525428034-b723cf961d3e' },
+      { url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&h=1080&fit=crop&q=80', author: 'Benjamin Voros', link: 'https://unsplash.com/photos/1519681393784-d120267933ba' },
+      { url: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?w=1920&h=1080&fit=crop&q=80', author: 'Jerry Zhang', link: 'https://unsplash.com/photos/1439853949127-fa647821eba0' },
+      { url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&h=1080&fit=crop&q=80', author: 'Samuel Ferrara', link: 'https://unsplash.com/photos/1472214103451-9374bd1c798e' },
+      { url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&h=1080&fit=crop&q=80', author: 'Carl Nenzen Loven', link: 'https://unsplash.com/photos/1464822759023-fed622ff2c3b' },
+      { url: 'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&h=1080&fit=crop&q=80', author: 'Yucel Moran', link: 'https://unsplash.com/photos/1475924156734-496f6cac6ec1' },
+      { url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1920&h=1080&fit=crop&q=80', author: 'Samuel Ferrara', link: 'https://unsplash.com/photos/1501785888041-af3ef285b470' },
+      // Ocean & water
+      { url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&h=1080&fit=crop&q=80', author: 'Olesia Bilkei', link: 'https://unsplash.com/photos/1505118380757-91f5f5632de0' },
+      { url: 'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1920&h=1080&fit=crop&q=80', author: 'Tracy Zhang', link: 'https://unsplash.com/photos/1439066615861-d1af74d74000' },
+      // Forest & greenery
+      { url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&h=1080&fit=crop&q=80', author: 'Khaled Ghareeb', link: 'https://unsplash.com/photos/1448375240586-882707db888b' },
+      { url: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=1920&h=1080&fit=crop&q=80', author: 'David Marcu', link: 'https://unsplash.com/photos/1542273917363-3b1817f69a2d' },
+      // Sunrise & sunset
+      { url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=1920&h=1080&fit=crop&q=80', author: 'Robert Lukeman', link: 'https://unsplash.com/photos/1495616811223-4d98c6e9c869' },
+      { url: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1920&h=1080&fit=crop&q=80', author: 'Lukasz Szmigiel', link: 'https://unsplash.com/photos/1470252649378-9c29740c9fa8' },
+      // Mountains
+      { url: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=1920&h=1080&fit=crop&q=80', author: 'Jerry Zhang', link: 'https://unsplash.com/photos/1454496522488-7a8e488e8606' },
+      { url: 'https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?w=1920&h=1080&fit=crop&q=80', author: 'Carl Nenzen Loven', link: 'https://unsplash.com/photos/1486870591958-9b9d0d1dda99' },
+      // Flowers & spring
+      { url: 'https://images.unsplash.com/photo-1462275646964-a0e3c11f18a6?w=1920&h=1080&fit=crop&q=80', author: 'Leilani Angel', link: 'https://unsplash.com/photos/1462275646964-a0e3c11f18a6' },
+      { url: 'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=1920&h=1080&fit=crop&q=80', author: 'Alexey Topolyanskiy', link: 'https://unsplash.com/photos/1490750967868-88aa4f44baee' },
+      // Lake & reflection
+      { url: 'https://images.unsplash.com/photo-1439405326854-014607f694d7?w=1920&h=1080&fit=crop&q=80', author: 'Grayson Smith', link: 'https://unsplash.com/photos/1439405326854-014607f694d7' },
+      // Aurora & sky
+      { url: 'https://images.unsplash.com/photo-1483354483454-4cd359948304?w=1920&h=1080&fit=crop&q=80', author: 'Juskteez', link: 'https://unsplash.com/photos/1483354483454-4cd359948304' },
+      // Winter & snow
+      { url: 'https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=1920&h=1080&fit=crop&q=80', author: 'David Marcu', link: 'https://unsplash.com/photos/1491002052546-bf38f186af56' },
+      // Portrait & people
+      { url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1531746020798-e6953c6e8e04' },
+      { url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1524504388940-b1c1722653e1' },
+      { url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1517841905240-472988babdf9' },
+      { url: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1502823403499-6ccfcf4fb453' },
+      { url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1539571696357-5a69c17a67c6' },
+      { url: 'https://images.unsplash.com/photo-1496440737103-cd596325d314?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1496440737103-cd596325d314' },
+      { url: 'https://images.unsplash.com/photo-1504439904031-93ded9f93e4e?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1504439904031-93ded9f93e4e' },
+      { url: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1529626455594-4ff0802cfb7e' },
+      { url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1544005313-94ddf0286df2' },
+      { url: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=1920&h=1080&fit=crop&q=80', author: 'Fleur', link: 'https://unsplash.com/photos/1488426862026-3ee34a7d66df' },
+    ];
+
+    // Try to load a background image with caching & fallback
+    function loadBackgroundImage() {
+      // Check if we have a cached image in sessionStorage (same session reuse)
+      const cached = sessionStorage.getItem('eyecare_bg_image');
+      const cachedAuthor = sessionStorage.getItem('eyecare_bg_author');
+      const cachedLink = sessionStorage.getItem('eyecare_bg_link');
+      const lastBgTime = parseInt(sessionStorage.getItem('eyecare_bg_time') || '0');
+      const now = Date.now();
+
+      // Reuse cached image if less than 30 minutes old
+      if (cached && (now - lastBgTime) < 30 * 60 * 1000) {
+        applyBackground(cached, cachedAuthor, cachedLink);
+        return;
+      }
+
+      // Pick a random image, different from last one
+      const lastIdx = parseInt(sessionStorage.getItem('eyecare_bg_idx') || '-1');
+      let idx;
+      do {
+        idx = Math.floor(Math.random() * bgImagePool.length);
+      } while (idx === lastIdx && bgImagePool.length > 1);
+
+      const chosen = bgImagePool[idx];
+      bgLoading.classList.add('show');
+
+      // Preload image
+      const img = new Image();
+      img.onload = function() {
+        bgLoading.classList.remove('show');
+        applyBackground(chosen.url, chosen.author, chosen.link);
+        // Cache it
+        sessionStorage.setItem('eyecare_bg_image', chosen.url);
+        sessionStorage.setItem('eyecare_bg_author', chosen.author);
+        sessionStorage.setItem('eyecare_bg_link', chosen.link);
+        sessionStorage.setItem('eyecare_bg_time', now.toString());
+        sessionStorage.setItem('eyecare_bg_idx', idx.toString());
+      };
+      img.onerror = function() {
+        bgLoading.classList.remove('show');
+        // Silent fallback: keep the solid color background
+      };
+      img.src = chosen.url;
+
+      // Timeout fallback after 5 seconds
+      setTimeout(() => {
+        if (!bgImageLayer.classList.contains('loaded')) {
+          bgLoading.classList.remove('show');
+        }
+      }, 5000);
+    }
+
+    function applyBackground(url, author, link) {
+      bgImageLayer.style.backgroundImage = `url(${url})`;
+      // Force reflow then add class for transition
+      void bgImageLayer.offsetWidth;
+      bgImageLayer.classList.add('loaded');
+      document.body.classList.add('has-bg-image');
+
+      if (author && link) {
+        bgSource.textContent = `\u{1F4F7} ${author} / Unsplash`;
+        bgSource.href = link;
+        setTimeout(() => bgSource.classList.add('show'), 1500);
+      }
+    }
+
+    loadBackgroundImage();
+
+    // Parse skip history
+    let skipHistory = [];
+    try {
+      const raw = params.get('skip_history') || '[]';
+      // Decode base64url (Rust side uses URL_SAFE_NO_PAD)
+      const padded = raw + '='.repeat((4 - raw.length % 4) % 4);
+      const decoded = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
+      skipHistory = JSON.parse(decoded);
+    } catch(e) { /* ignore */ }
+
+    // Set theme and severity class
+    document.documentElement.style.setProperty('--bg-color', themeColor);
+    if (severity >= 5) document.body.classList.add('severity-5');
+    else if (severity >= 4) document.body.classList.add('severity-4');
+
+    // ---- Eye Health Bar ----
+    function updateHealthBar(health) {
+      const bar = document.getElementById('healthBar');
+      const emoji = document.getElementById('healthEmoji');
+      const percent = document.getElementById('healthPercent');
+      const detail = document.getElementById('healthDetail');
+
+      bar.style.width = health + '%';
+      percent.textContent = health + '%';
+
+      // Remove all color classes
+      bar.className = 'health-bar-fill';
+
+      if (health > 65) {
+        bar.classList.add('green');
+        emoji.textContent = '👁?;
+        detail.textContent = '状态良好，继续保持?;
+      } else if (health > 45) {
+        bar.classList.add('yellow');
+        emoji.textContent = '😐';
+        detail.textContent = '眼睛有点累了，记得多眨眼?;
+      } else if (health > 25) {
+        bar.classList.add('orange');
+        emoji.textContent = '😧';
+        detail.textContent = '眼睛很疲劳了！请立即休息?;
+      } else if (health > 10) {
+        bar.classList.add('red');
+        emoji.textContent = '😵';
+        detail.textContent = '警告：眼睛疲劳度已过高！';
+      } else {
+        bar.classList.add('dark');
+        emoji.textContent = '💀';
+        detail.textContent = '紧急！你的眼睛正在死去...';
+        // Pulsing animation for critical health
+        bar.style.animation = 'pulse 1s infinite';
+      }
+    }
+
+    updateHealthBar(eyeHealth);
+
+    // ---- Skip History ----
+    const skipPanel = document.getElementById('skipPanel');
+    const skipList = document.getElementById('skipList');
+    if (skipHistory.length > 0) {
+      skipPanel.style.display = 'block';
+      skipHistory.forEach(record => {
+        const li = document.createElement('li');
+        const reasons = ['我在?, '等一?, '马上就好', '再写5分钟', '稍后'];
+        const reason = reasons[Math.floor(Math.random() * reasons.length)];
+        const skippedSec = record.skipped_after || 30;
+        li.innerHTML = `
+          <span class="skip-time">${record.time}</span>
+          <span class="skip-reason">"${reason}"</span>
+          <span class="skip-lost">损失 ${skippedSec}s</span>
+        `;
+        skipList.appendChild(li);
+      });
+    }
+
+    // ---- Damage Bill ----
+    const damageBill = document.getElementById('damageBill');
+    if (severity >= 3 && totalSkipped > 0) {
+      damageBill.style.display = 'block';
+      document.getElementById('damageSkippedTime').textContent = Math.floor(totalSkipped / 60) + '分钟';
+      const fatigue = Math.min(99, Math.floor(eyeHealth <= 25 ? 95 : 50 + (100 - eyeHealth) * 0.5));
+      document.getElementById('damageFatigue').textContent = fatigue + '%';
+      const recovery = Math.max(5, Math.ceil(totalSkipped / 60 / 2));
+      document.getElementById('damageRecovery').textContent = recovery + '分钟';
+    }
+
+    // ---- Forced Warning ----
+    const closeBtn = document.getElementById('closeBtn');
+    const forcedCountdown = document.getElementById('forcedCountdown');
+    const hintEl = document.getElementById('hint');
+
+    if (forced) {
+      document.getElementById('forcedWarning').style.display = 'block';
+      closeBtn.disabled = true;
+      closeBtn.textContent = '请稍?..';
+      forcedCountdown.style.display = 'block';
+      hintEl.textContent = '强制休息期间无法关闭';
+    }
+
+    // ---- Interaction phases (动态引导动? ----
+    const interactions = [
+      { time: 0, text: '👁?慢慢闭眼，深呼吸?, animation: 'fade-in', emojiClass: '' },
+      { time: Math.floor(duration * 0.3), text: '🔄 转动眼珠，顺时针3圈～', animation: 'pulse', emojiClass: 'emoji-spin' },
+      { time: Math.floor(duration * 0.6), text: '🌿 看向窗外，有没有看到星星?, animation: 'pulse', emojiClass: '' }
+    ];
+    
+    // 随机小彩蛋（趣味护眼冷知识）
+    const funFacts = [
+      '💡 眨眼一次只?.3秒！现在多眨几下吧～',
+      '💡 人眼可以分辨?000万种颜色！你的眼睛很厉害哦～',
+      '💡 眼睛的肌肉是人体最活跃的肌肉之一?,
+      '💡 正常人每分钟眨眼15-20次，看屏幕时会减少到3-5次！',
+      '💡 眼泪不仅能润滑眼睛，还有杀菌作用！',
+      '💡 人的眼睛从出生后大小基本不变，但耳朵和鼻子会一直长?,
+      '💡 眼睛聚焦肌肉每天运动?0万次，相当于步行50公里?,
+      '💡 闭眼休息20秒可以缓解约50%的眼疲劳?
+    ];
+    
+    // ?0次休息显示彩蛋（这里用随机概率模拟）
+    const showFunFact = Math.random() < 0.3; // 30%概率显示
+
+    let remaining = duration;
+    let currentPhase = -1;
+    const countdownEl = document.getElementById('countdown');
+    const interactionEl = document.getElementById('interactionText');
+    interactionEl.textContent = interactions[0].text;
+    interactionEl.classList.add('fade-in');
+
+    const timer = setInterval(() => {
+      remaining--;
+      countdownEl.textContent = remaining;
+
+      if (remaining > 0) {
+        // 动态切换引导阶?        const elapsed = duration - remaining;
+        for (let i = interactions.length - 1; i >= 0; i--) {
+          if (elapsed >= interactions[i].time && currentPhase !== i) {
+            currentPhase = i;
+            interactionEl.classList.remove('fade-in', 'pulse');
+            void interactionEl.offsetWidth; // 触发重排
+            interactionEl.textContent = interactions[i].text;
+            interactionEl.classList.add(interactions[i].animation);
+            break;
+          }
+        }
+        
+        // 显示随机小彩?        if (showFunFact && elapsed === Math.floor(duration / 2)) {
+          const factEl = document.createElement('div');
+          factEl.className = 'fun-fact';
+          factEl.innerHTML = `<div class="fun-fact-title">🌟 护眼小知?/div>${funFacts[Math.floor(Math.random() * funFacts.length)]}`;
+          interactionEl.parentNode.insertBefore(factEl, interactionEl.nextSibling);
+        }
+      }
+
+      // Simulate health recovery during break
+      const recoveredHealth = Math.min(100, eyeHealth + Math.floor((duration - remaining) * 2.5));
+      updateHealthBar(recoveredHealth);
+
+      if (forced) {
+        const elapsed = duration - remaining;
+        if (elapsed >= forcedMinDuration) {
+          closeBtn.disabled = false;
+          closeBtn.textContent = '元气回归 ?;
+          forcedCountdown.style.display = 'none';
+          hintEl.textContent = '点击任意位置或按 Esc 键关?;
+        } else {
+          const fRemaining = forcedMinDuration - elapsed;
+          forcedCountdown.textContent = '还需等待 ' + fRemaining + ' 秒才能关?;
+        }
+      }
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        closeFullscreen(false);
+      }
+    }, 1000);
+
+    // ---- Close handlers ----
+    async function closeFullscreen(early) {
+      clearInterval(timer);
+      const remainingVal = parseInt(document.getElementById('countdown').textContent) || 0;
+
+      if (window.__TAURI__ && window.__TAURI__.core) {
+        try {
+          // 如果休息完成（非提前关闭），重置连续工作计时?          if (!early) {
+            await window.__TAURI__.core.invoke("reset_work_timer");
+          }
+          // 通知后端处理，后端会关闭窗口
+          window.__TAURI__.core.invoke("close_fullscreen_window", {
+            early: early,
+            remaining: remainingVal,
+            breakDuration: duration
+          });
+        } catch (e) {
+          console.error("Failed to notify backend:", e);
+          window.close();
+        }
+      } else {
+        window.close();
+      }
+    }
+
+    function canClose() {
+      if (!forced) return true;
+      const elapsed = duration - remaining;
+      return elapsed >= forcedMinDuration;
+    }
+
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (canClose()) closeFullscreen(remaining > 0);
+    });
+
+    document.body.addEventListener('click', () => {
+      if (canClose()) closeFullscreen(remaining > 0);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && canClose()) closeFullscreen(remaining > 0);
+    });
+  </script>
+
+  <!-- Pulse animation for critical health -->
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
+</body>
+</html>

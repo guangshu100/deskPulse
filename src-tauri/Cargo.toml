@@ -1,0 +1,55 @@
+[package]
+name = "eye-care"
+version = "1.0.0"
+description = "A lightweight eye care reminder tool with AI enhancement"
+authors = ["EyeCare Team"]
+edition = "2021"
+
+[lib]
+name = "eye_care_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-store = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-global-shortcut = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+env_logger = "0.11"
+chrono = "0.4"
+dirs = "5"
+ring = "0.17"
+base64 = "0.22"
+urlencoding = "2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Foundation",
+    "Win32_System_SystemInformation",
+    "Win32_UI_Input_KeyboardAndMouse",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Linux idle detection via XScreenSaver extension
+# Build requires: libx11-dev libxss-dev (apt) / libX11-devel libXss-devel (dnf)
+x11 = { version = "2.21", features = ["xlib", "xss"] }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EyeCare - 护眼提醒设置</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-with-pet">
+        <div class="header-left">
+          <div class="pet-avatar-header" id="pet-avatar-header" title="点击与宠物互动">
+            <svg viewBox="0 0 100 100" class="pet-svg">
+              <circle cx="50" cy="50" r="45" fill="#FFE4B5"/>
+              <circle cx="35" cy="40" r="8" fill="#333"/>
+              <circle cx="65" cy="40" r="8" fill="#333"/>
+              <circle cx="37" cy="38" r="3" fill="#fff"/>
+              <circle cx="67" cy="38" r="3" fill="#fff"/>
+              <ellipse cx="50" cy="60" rx="12" ry="8" fill="#FFB6C1"/>
+              <path d="M 35 70 Q 50 80 65 70" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="header-text">
+            <h1>EyeCare</h1>
+            <p class="subtitle">保护眼睛，健康工作</p>
+          </div>
+        </div>
+        <div class="header-right">
+          <span class="header-pet-info" id="header-pet-info">小萌 😊 100</span>
+          <span class="header-divider">|</span>
+          <span class="header-water-info" id="header-water-info">💧 0ml</span>
+        </div>
+      </div>
+    </header>
+    
+    <main>
+      <!-- 状态卡片 - 最醒目放顶部 -->
+      <section class="card status-card">
+        <div class="status-row">
+          <div class="status-indicator">
+            <span id="status-dot" class="dot active"></span>
+            <span id="status-text">运行中</span>
+          </div>
+          <div class="status-info-inline">
+            <span class="info-item"><b>连续工作:</b> <span id="continuous-work-time">0秒</span></span>
+            <span class="info-item"><b>下次提醒:</b> <span id="next-reminder">--</span></span>
+          </div>
+          <button id="toggle-pause" class="btn btn-secondary btn-small">暂停</button>
+        </div>
+      </section>
+
+      <!-- 眼睛状态 & 统计 - 核心数据放第二位 -->
+      <section class="card">
+        <h2>📊 今日状态</h2>
+        <div class="stats-inline">
+          <div class="stat-item-inline">
+            <span class="stat-icon">👁️</span>
+            <div class="stat-content">
+              <span class="stat-value" id="eye-health">100%</span>
+              <span class="stat-label">眼睛生命值</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item-inline">
+            <span class="stat-icon">☕</span>
+            <div class="stat-content">
+              <span class="stat-value" id="break-count">0</span>
+              <span class="stat-label">休息次数</span>
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item-inline">
+            <span class="stat-icon">💧</span>
+            <div class="stat-content">
+              <span class="stat-value" id="water-total">0</span>
+              <span class="stat-label">喝水ml</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 快捷操作 -->
+      <section class="card quick-actions">
+        <div class="action-row">
+          <button id="test-break" class="btn btn-outline">🛋️ 立即休息</button>
+          <button id="drink-water-btn" class="btn btn-outline">💧 已喝一杯</button>
+        </div>
+      </section>
+
+      <!-- 基础设置 - 紧凑布局 -->
+      <section class="card collapsible">
+        <h2 class="collapsible-header expanded">
+          ⚙️ 基础设置 <span class="toggle-icon">▼</span>
+        </h2>
+        <div id="basic-section" class="collapsible-content expanded">
+          <div class="settings-compact">
+            <div class="setting-row">
+              <label>休息间隔</label>
+              <div class="setting-control">
+                <input type="range" id="idle-threshold" min="5" max="120" value="30">
+                <span id="idle-threshold-value">30分钟</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>休息时长</label>
+              <div class="setting-control">
+                <input type="range" id="break-duration" min="15" max="120" value="30">
+                <span id="break-duration-value">30秒</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>最大跳过</label>
+              <div class="setting-control">
+                <input type="range" id="max-skips" min="1" max="10" value="3">
+                <span id="max-skips-value">3次</span>
+              </div>
+            </div>
+            <div class="setting-row inline-options">
+              <label>护眼背景</label>
+              <div class="theme-options">
+                <button class="theme-btn active" data-color="#E8F4F8" style="background:#E8F4F8"></button>
+                <button class="theme-btn" data-color="#F5F5DC" style="background:#F5F5DC"></button>
+                <button class="theme-btn" data-color="#E8F5E9" style="background:#E8F5E9"></button>
+              </div>
+            </div>
+            <div class="setting-row checkbox-row">
+              <label><input type="checkbox" id="auto-start" checked> 开机自动启动</label>
+            </div>
+            <div class="setting-row">
+              <label>应用白名单</label>
+              <div class="whitelist-config">
+                <div id="whitelist-apps" class="whitelist-apps"></div>
+                <div class="whitelist-add">
+                  <div class="whitelist-input-wrap">
+                    <input type="text" id="whitelist-input" placeholder="点击选择或输入应用名" autocomplete="off">
+                    <div id="whitelist-suggestions" class="whitelist-suggestions hidden"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 喝水提醒 -->
+      <section class="card collapsible">
+        <h2 class="collapsible-header expanded">
+          💧 喝水提醒 <span class="toggle-icon">▼</span>
+        </h2>
+        <div id="water-section" class="collapsible-content expanded">
+          <div class="settings-compact">
+            <div class="setting-row checkbox-row">
+              <label><input type="checkbox" id="water-enabled"> 启用喝水提醒</label>
+            </div>
+            <div id="water-config" class="water-config hidden">
+              <!-- 提醒模式切换 -->
+              <div class="setting-row">
+                <label>提醒模式</label>
+                <div class="mode-toggle">
+                  <button class="mode-btn active" id="mode-schedule" onclick="setWaterMode('schedule')">🏢 上班排班</button>
+                  <button class="mode-btn" id="mode-interval" onclick="setWaterMode('interval')">⏱️ 固定间隔</button>
+                </div>
+              </div>
+
+              <!-- 上班排班模式 -->
+              <div id="schedule-panel" class="schedule-panel">
+                <div class="schedule-hint">按办公时段智能提醒，全天6次，总建议约1150ml</div>
+                <div class="schedule-list" id="schedule-list">
+                  <!-- JS 动态渲染 -->
+                </div>
+                <div class="water-progress-mini">
+                  <div class="water-progress-bar">
+                    <div class="water-progress-fill" id="water-progress-fill" style="width: 0%"></div>
+                  </div>
+                  <span class="water-text"><span id="water-total-display">0</span>ml · <span id="schedule-progress-text">0/6 时段</span></span>
+                </div>
+              </div>
+
+              <!-- 固定间隔模式 -->
+              <div id="interval-panel" class="interval-panel hidden">
+                <div class="setting-row">
+                  <label>提醒间隔</label>
+                  <div class="setting-control">
+                    <input type="range" id="water-interval" min="10" max="120" value="30">
+                    <span id="water-interval-value">30分钟</span>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <label>每日目标</label>
+                  <div class="setting-control">
+                    <input type="range" id="water-goal" min="500" max="4000" step="100" value="2000">
+                    <span id="water-goal-value">2000ml</span>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <label>每杯容量</label>
+                  <div class="setting-control">
+                    <input type="range" id="water-cup" min="100" max="500" step="50" value="250">
+                    <span id="water-cup-value">250ml</span>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <label>提醒时段</label>
+                  <div class="setting-control time-selects">
+                    <select id="water-start-hour">
+                      <option value="6">06:00</option>
+                      <option value="7">07:00</option>
+                      <option value="8" selected>08:00</option>
+                      <option value="9">09:00</option>
+                    </select>
+                    <span>~</span>
+                    <select id="water-end-hour">
+                      <option value="21">21:00</option>
+                      <option value="22" selected>22:00</option>
+                      <option value="23">23:00</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="water-progress-mini">
+                  <div class="water-progress-bar">
+                    <div class="water-progress-fill" id="water-progress-fill-interval" style="width: 0%"></div>
+                  </div>
+                  <span class="water-text"><span id="water-goal-display">2000</span>ml 目标</span>
+                </div>
+              </div>
+
+              <!-- 通用设置 -->
+              <div class="setting-row">
+                <label>每杯容量</label>
+                <div class="setting-control">
+                  <input type="range" id="water-cup-general" min="100" max="500" step="50" value="250">
+                  <span id="water-cup-general-value">250ml</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI智能增强 -->
+      <section class="card collapsible">
+        <h2 class="collapsible-header expanded">
+          🤖 AI智能增强 <span class="toggle-icon">▼</span>
+        </h2>
+        <div id="ai-section" class="collapsible-content expanded">
+          <div class="form-group checkbox-group">
+            <label><input type="checkbox" id="ai-enabled"> 启用AI生成个性化提醒文案</label>
+          </div>
+          <div id="ai-config" class="ai-config hidden">
+            <div class="setting-row">
+              <label>服务商</label>
+              <select id="ai-provider">
+                <option value="siliconflow">硅基流动 (推荐)</option>
+                <option value="openai">OpenAI</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="ollama">Ollama (本地)</option>
+                <option value="custom">自定义</option>
+              </select>
+            </div>
+            <div class="setting-row" id="api-base-url-row">
+              <label>API地址</label>
+              <input type="text" id="api-base-url" placeholder="https://api.siliconflow.cn/v1">
+            </div>
+            <div class="setting-row">
+              <label>API密钥</label>
+              <div class="input-with-toggle">
+                <input type="password" id="api-key" placeholder="输入API密钥">
+                <button type="button" class="btn-toggle-pwd" id="toggle-api-key" title="显示/隐藏密钥">👁️</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>模型名称</label>
+              <div class="input-with-actions">
+                <input type="text" id="model" placeholder="如: Qwen/Qwen2.5-7B-Instruct">
+                <button type="button" id="test-ai-btn" class="btn-icon-test" title="测试连接">🔗</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>文案风格</label>
+              <select id="preferred-style">
+                <option value="balanced">平衡模式</option>
+                <option value="gentle">温柔鼓励型</option>
+                <option value="humor">幽默俏皮型</option>
+              </select>
+            </div>
+            <div id="ai-test-result" class="test-result hidden"></div>
+          </div>
+          <p class="hint">💡 启用AI后将生成个性化提醒文案</p>
+        </div>
+      </section>
+
+      <!-- 快捷键 - 最底部 -->
+      <section class="card shortcuts-card">
+        <div class="shortcuts-inline">
+          <span class="shortcut"><kbd>Ctrl+Shift+R</kbd> 立即休息</span>
+          <span class="shortcut"><kbd>Esc</kbd> 关闭护眼页</span>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <script type="module" src="main.js"></script>
+</body>
+</html>
